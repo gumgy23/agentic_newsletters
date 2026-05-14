@@ -22,7 +22,7 @@ SPAM_TRIGGERS = [
     r"\b100%\s*free\b", r"\bargent\b", r"\bexclusive deal\b",
 ]
 
-SYSTEM_PROMPT = """You are an expert newsletter editor for NexNusa AI, a technology company helping Indonesian businesses grow with AI. Your newsletters are sharp, credible, and useful — written for professionals who want signal, not noise.
+SYSTEM_PROMPT = """You are an expert newsletter editor for NexNusa AI, a technology company helping Indonesian businesses grow with AI. Your newsletters are sharp, credible, and useful — written in Bahasa Indonesia for professionals who want signal, not noise.
 
 Your task is to produce a complete newsletter in valid JSON format. Follow the schema exactly. Output ONLY the JSON object — no markdown fences, no explanations, nothing before or after the JSON.
 
@@ -76,6 +76,7 @@ Schema:
 }
 
 Rules:
+- Language: Write ALL user-facing text fields in Bahasa Indonesia. This includes title, intro, section headings, body, callouts, takeaways, CTA, subject lines, preview text, and chart titles/labels/captions. Do NOT write any of these in English.
 - subject_lines: exactly 3 items. First is direct/clear. Second is curiosity-gap. Third leads with a data point.
 - preview_text: max 90 characters. Must feel different from all 3 subject lines.
 - sections: 3-5 sections based on requested length.

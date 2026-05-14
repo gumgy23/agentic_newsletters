@@ -18,7 +18,7 @@ Produce and deliver a research-backed, chart-enhanced, NexNusa AI branded HTML n
 
 ## Pre-flight Checklist (run before Step 1)
 
-1. Verify `.env` exists (copy from `.env.example` if not). Must contain: `TAVILY_API_KEY`, `ANTHROPIC_API_KEY`, `SMTP_USER`, `SMTP_PASS`, `GOOGLE_SPREADSHEET_ID`
+1. Verify `.env` exists (copy from `.env.example` if not). Must contain: `TAVILY_API_KEY`, `ANTHROPIC_API_KEY`, `KIE_API_KEY`, `SMTP_USER`, `SMTP_PASS`, `GOOGLE_SPREADSHEET_ID`
 2. Verify `tools/templates/newsletter.html.j2` exists
 3. Verify `brand_assets/Logo Nexnusa ai.png` and `brand_assets/icon nexnusa.png` exist
    - **Size check:** Logo must be under ~50 KB (PNG) or use a JPEG version. A large logo is the #1 cause of Gmail clipping. Use `brand_assets/Logo Nexnusa ai.jpg` (JPEG at q60, ~5 KB) for smallest size. Pass `--logo "brand_assets/Logo Nexnusa ai.jpg"` to `build_html.py`.
@@ -107,18 +107,19 @@ Record the chosen subject as `selected_subject`.
 ### Step 4 — Generate Charts
 
 - **Tool:** `tools/generate_charts.py`
+- **Provider:** [Nano Banana (kie.ai)](https://kie.ai/) — AI image generation API. Requires `KIE_API_KEY` in `.env` (get one at https://kie.ai/api-key).
 - **Command:**
   ```
   python tools/generate_charts.py \
     --content .tmp/content_YYYYMMDD.json \
-    --output-dir .tmp/charts \
-    --width 600 \
-    --height 320 \
-    --dpi 150
+    --output-dir .tmp/charts
   ```
+  (`--width`, `--height`, `--dpi` flags are accepted for CLI compatibility but ignored — Nano Banana determines output dimensions.)
 - **Output:** `.tmp/charts/chart_0.png`, `.tmp/charts/chart_1.png`, etc.
+- **How it works:** Each `chart_spec` is converted into a detailed text prompt describing the chart type, data, and NexNusa AI brand colors. The prompt is sent to Nano Banana, which generates a PNG image. The tool polls for completion (up to 5 minutes per chart) and downloads the result.
 - **Skip condition:** If `chart_specs` is empty in the content JSON, skip this step. `build_html.py` handles zero charts gracefully.
-- **On failure (exit 2 — invalid chart spec):** The tool logs the bad spec and continues with remaining charts. Check the error output and notify the user if all charts failed.
+- **On failure (exit 1 — missing API key):** Set `KIE_API_KEY` in `.env`.
+- **On failure (API/timeout error):** The tool logs the bad spec and continues with remaining charts. Check the error output and notify the user if all charts failed. If kie.ai credits are exhausted, top up at https://kie.ai.
 
 ---
 
@@ -292,4 +293,7 @@ If adding new tools that call external APIs, apply the same pattern.
 Property names must match exactly (case-sensitive). If the database doesn't have the expected columns, `archive_notion.py` now skips gracefully (exit 0) with a skip message instead of failing. Fix by creating properties: Title (Title type), Topic (Text), Subject Line (Text), Issue (Number), Date (Date), Status (Select: Draft/Sent), Subscribers Reached (Number), Key Takeaways (Text), Sources (Text).
 
 **Charts with no data**
-If Claude sets `chart_specs: []` (no chartable data found in research), Steps 4 is skipped and the newsletter renders without charts. This is expected and handled gracefully.
+If Claude sets `chart_specs: []` (no chartable data found in research), Step 4 is skipped and the newsletter renders without charts. This is expected and handled gracefully.
+
+**Nano Banana image quality**
+Nano Banana is an AI image model — chart output is generated from a text prompt, so exact pixel-perfect rendering is not guaranteed. If a chart looks off (wrong values, missing labels), re-run Step 4; generation is non-deterministic and a second attempt usually improves results. For maximum accuracy, keep data sets small (≤8 data points per chart). Nano Banana uses a point-based credit system at kie.ai — monitor usage at https://kie.ai/logs.
